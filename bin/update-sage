@@ -3,4 +3,5 @@
 wget -q --tries=10 --timeout=20 --spider http://google.com
 if [[ $? -eq 0 ]]; then
     cd $HOME/.scripts/math216-sage-scripts && git pull
+    my-script
 fi

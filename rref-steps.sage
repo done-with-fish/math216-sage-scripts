@@ -5,8 +5,9 @@
 #
 # This script contains two functions along those lines:
 #
-#    rref(): returns a list of elementary matrices that put the matrix into rref
-#    rref_steps(): returns a list of strings that describe what row ops to do
+#    rref_ems(): returns a list of elementary matrices that put the matrix into
+#    rref rref_steps(): returns a list of strings that describe what row ops to
+#    do
 #
 # The others are just helper functions.
 #
@@ -64,9 +65,9 @@ def rref_steps(A):
     """
     Return a list describing the steps one would take to reduce `A` to its rref.
     """
-    return [identify_elem(e) for e in reversed(rref(A))]
+    return [identify_elem(e) for e in reversed(rref_ems(A))]
 
-def rref(A, start_row=0, start_col=0):
+def rref_ems(A, start_row=0, start_col=0):
     """
     Return `ems`, a list of elementary matrices that turn A into its
     rref. Assumes an exact ring (actually, it assumes QQ), and is not
@@ -91,7 +92,7 @@ def rref(A, start_row=0, start_col=0):
             break
         except IndexError:
             pass
-    
+
     if pivot_col == -1:
         # zero matrix, it's in rref already.
         return []
@@ -116,35 +117,80 @@ def rref(A, start_row=0, start_col=0):
         A = E*A
 
     # recurse
-    return rref(A, start_row + 1, pivot_col + 1) + ems
+    return rref_ems(A, start_row + 1, pivot_col + 1) + ems
 
 def test(n=10):
     for _ in range(n):
         nrows = randrange(1,15)
         ncols = randrange(1,15)
         A = random_matrix(QQ, nrows, ncols)
-        ems = rref(A)
+        ems = rref_ems(A)
         if prod(ems) * A != A.rref():
             print 'UH OH:'
             print A
             return False
     return True
 
-def row_steps(A):
-    ems   = rref(A)
-    steps = rref_steps(A)
-    
-    B = A
+# the following functions were added by Brian Fitzpatrick
 
-    ems.reverse()
+import os
 
-    print "Input matrix:"
-    print A
-    print '\n'
-
-    for i in range(len(ems)):
-        B = ems[i]*B
-        print steps[i]
-        print B
-        print '\n'
+def my_print(prefix, s):
+    lines = s.split('\n')
+    print '\t' + prefix + lines[0]
+    lines.pop(0)
+    if lines:
+        for x in lines:
+            print '\t' + ''.ljust(len(prefix)) + x
     return None
+
+def row_steps(A):
+    ems = rref_ems(A)
+    steps = rref_steps(A)
+    B = A
+    ems.reverse()
+    print('\n' * 10)
+    os.system('clear')
+    print 'Input matrix:\n'
+    my_print('A = ', str(A))
+    print '\n'
+    for i, (em, step) in enumerate(zip(ems, steps)):
+        B = em*B
+        print 'Step {0}: {1}\n'.format(i+1, step)
+        my_print('--> ', str(B))
+        print '\n'
+    print 'Result:\n'
+    my_print('rref(A) = ', str(A.rref()))
+    raw_input('\nPress Enter to continue.')
+    return None
+
+def row_steps_with_elem(A):
+    ems = rref_ems(A)
+    steps = rref_steps(A)
+    B = A
+    ems.reverse()
+    print('\n' * 10)
+    os.system('clear')
+    print 'Input matrix:\n'
+    my_print('A = ', str(A))
+    print '\n'
+    for i, (em, step) in enumerate(zip(ems, steps)):
+        B = em*B
+        print 'Step {0}: {1}\n'.format(i+1, step)
+        my_print('--> ', str(B))
+        print '\n'
+        my_print('E_{} = '.format(i+1), str(em))
+        print '\n'
+    print 'Result:\n'
+    my_print('rref(A) = ', str(A.rref()))
+    print '\n'
+    product = ''.join('(E_{})'.format(i+1) for i in reversed(xrange(len(ems))))
+    print '\t' + product + '(A) = rref(A)\n'
+    global Elem
+    Elem = [None] + ems
+    print 'The i-th elementary matrix can be called with \'Elem[i]\''
+    raw_input('\nPress Enter to continue.')
+    return None
+
+def col_augment(A, b):
+    return A.augment(b, subdivide=True)
